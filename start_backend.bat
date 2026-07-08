@@ -1,0 +1,3 @@
+@echo off
+echo Starting FastAPI Backend using venv...
+venv\Scripts\uvicorn.exe backend.main:app --reload

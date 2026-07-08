@@ -1,0 +1,27 @@
+# Python virtual environments
+venv/
+.venv/
+
+# Python cache
+__pycache__/
+*.py[cod]
+
+# Environment variables - NEVER commit secrets
+.env
+
+# ChromaDB local vector store (rebuilt from questions.jsonl on startup)
+data/chroma_db/
+
+# IDE / OS
+.vscode/
+.idea/
+*.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Build artifacts
+dist/
+build/
+*.egg-info/

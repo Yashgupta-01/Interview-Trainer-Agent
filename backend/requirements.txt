@@ -1,0 +1,6 @@
+fastapi
+uvicorn
+ibm-cos-sdk
+pydantic
+python-dotenv
+requests

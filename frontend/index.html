@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Interview Trainer - IBM Cloud</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Outfit:wght@500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+    <div class="background-blobs">
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+    </div>
+
+    <div class="glass-container">
+        <header>
+            <h1 class="gradient-text">AI Interview Trainer</h1>
+            <p>Powered by IBM Cloud & Watsonx</p>
+        </header>
+
+        <main>
+            <div class="control-panel">
+                <div class="input-group">
+                    <label for="role-select">Select your Role</label>
+                    <div class="select-wrapper">
+                        <select id="role-select">
+                            <option value="Machine Learning Engineer">Machine Learning Engineer</option>
+                            <option value="Data Scientist">Data Scientist</option>
+                            <option value="Data Analyst">Data Analyst</option>
+                            <option value="AI Engineer">AI Engineer</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="input-group">
+                    <label for="exp-select">Experience Level</label>
+                    <div class="select-wrapper">
+                        <select id="exp-select">
+                            <option value="Junior">Junior</option>
+                            <option value="Mid">Mid</option>
+                            <option value="Senior">Senior</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="resume-section">
+                <label for="resume-text">Paste your Resume / Background (For AI RAG Matching)</label>
+                <textarea id="resume-text" placeholder="I have 3 years of experience building PyTorch models and deploying them using Docker..." rows="4"></textarea>
+                <button id="generate-btn" class="primary-btn">Generate Tailored Interview Question</button>
+            </div>
+
+            <div id="interview-section" class="hidden slide-up">
+                <div class="question-card">
+                    <div class="card-header">
+                        <span class="pulse-dot"></span>
+                        <h3>Interview Question</h3>
+                    </div>
+                    <p id="question-text" class="question-text">Loading...</p>
+                </div>
+
+                <div class="answer-section">
+                    <label for="user-answer">Your Answer</label>
+                    <textarea id="user-answer" placeholder="Explain your thought process here..." rows="5"></textarea>
+                    <button id="submit-btn" class="submit-btn">Submit Answer for Evaluation</button>
+                </div>
+            </div>
+
+            <div id="feedback-section" class="hidden slide-up delay-1">
+                <div class="feedback-card glass-card">
+                    <h3>IBM Watsonx Evaluation</h3>
+                    <div id="feedback-content" class="feedback-content"></div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="/static/script.js"></script>
+</body>
+</html>
