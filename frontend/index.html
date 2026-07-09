@@ -63,7 +63,45 @@
                 <div class="answer-section">
                     <label for="user-answer">Your Answer</label>
                     <textarea id="user-answer" placeholder="Explain your thought process here..." rows="5"></textarea>
-                    <button id="submit-btn" class="submit-btn">Submit Answer for Evaluation</button>
+
+                    <!-- Action buttons row -->
+                    <div class="action-row">
+                        <button id="submit-btn" class="submit-btn">Submit Answer for Evaluation</button>
+                        <button id="show-answer-btn" class="secondary-btn">💡 Show Answer</button>
+                        <button id="next-btn" class="next-btn">Next Question →</button>
+                    </div>
+                </div>
+
+                <!-- Show Answer panel (hidden by default) -->
+                <div id="show-answer-section" class="hidden slide-up">
+                    <div class="model-answer-card">
+                        <div class="ma-header">
+                            <span class="ma-icon">📖</span>
+                            <h4>Model Answer</h4>
+                        </div>
+                        <p id="model-answer-text" class="model-answer-text"></p>
+                    </div>
+
+                    <!-- Key-points collector (shown when question is project-related) -->
+                    <div id="key-points-section" class="hidden">
+                        <div class="kp-header">
+                            <span>📌</span>
+                            <p>This looks like a project question. Enter your key action points and the AI will frame a personalised answer for you.</p>
+                        </div>
+                        <div id="kp-rows">
+                            <div class="kp-row">
+                                <input class="kp-input" type="text" placeholder="e.g. Used transfer learning with ResNet50">
+                            </div>
+                        </div>
+                        <div style="display:flex;gap:8px;margin-top:8px">
+                            <button id="kp-add-btn" class="kp-add-btn">+ Add Point</button>
+                            <button id="kp-generate-btn" class="submit-btn" style="flex:1">Generate Framed Answer</button>
+                        </div>
+                        <div id="framed-answer-box" class="hidden model-answer-card" style="margin-top:12px">
+                            <div class="ma-header"><span class="ma-icon">✨</span><h4>Your Framed Answer</h4></div>
+                            <p id="framed-answer-text" class="model-answer-text"></p>
+                        </div>
+                    </div>
                 </div>
             </div>
 

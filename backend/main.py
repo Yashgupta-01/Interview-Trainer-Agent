@@ -49,6 +49,12 @@ class EvaluationRequest(BaseModel):
     model_answer: str
     user_answer: str
 
+class FrameAnswerRequest(BaseModel):
+    question: str
+    key_points: List[str]
+    role: str
+    experience: str
+
 app.mount("/static", StaticFiles(directory=os.path.join(os.path.dirname(__file__), '..', 'frontend')), name="static")
 
 @app.get("/")
@@ -180,6 +186,33 @@ def get_question(req: SessionRequest):
         "source": "static-rag"
     }
 
+@app.post("/api/frame_answer")
+def frame_answer(req: FrameAnswerRequest):
+    """Turn user's bullet key-points into a STAR-framed interview answer."""
+    points_text = "\n".join(f"- {p}" for p in req.key_points)
+    if not WATSONX_API_KEY:
+        return {"framed_answer": points_text}
+
+    prompt = (
+        f"You are a career coach helping a {req.experience} {req.role} answer an interview question.\n"
+        f"Question: {req.question}\n\n"
+        f"The candidate's key points:\n{points_text}\n\n"
+        f"Using ONLY these key points, write a concise, well-structured answer (3-5 sentences) "
+        f"using the STAR method where applicable. Do not invent facts not in the key points.\n\n"
+        f"Answer:"
+    )
+    result = call_watsonx(prompt, max_tokens=300, temperature=0.4)
+    if result:
+        # Strip any echo of the prompt prefix
+        for prefix in ["Answer:", "answer:"]:
+            if result.lower().startswith(prefix.lower()):
+                result = result[len(prefix):].strip()
+        # Strip stray code tails
+        result = re.sub(r'\n```[\s\S]*$', '', result, flags=re.MULTILINE).strip()
+        return {"framed_answer": result}
+    return {"framed_answer": points_text}
+
+
 @app.post("/api/evaluate")
 def evaluate_answer(req: EvaluationRequest):
     if WATSONX_API_KEY and WATSONX_PROJECT_ID:
@@ -189,7 +222,7 @@ def evaluate_answer(req: EvaluationRequest):
             f"Model Answer: {req.model_answer}\n"
             f"Candidate's Answer: {req.user_answer}\n\n"
             f"Evaluate the candidate using ONLY this exact format. "
-            f"Output nothing before SCORE and nothing after the last tip. No code, no notes.\n\n"
+            f"Output nothing before SCORE and nothing after IMPROVED_ANSWER. No code, no notes.\n\n"
             f"SCORE: [number]/10\n"
             f"SUMMARY: [one or two sentence overall assessment]\n"
             f"STRENGTHS:\n"
@@ -202,10 +235,12 @@ def evaluate_answer(req: EvaluationRequest):
             f"- [specific tip 1]\n"
             f"- [specific tip 2]\n"
             f"- [specific tip 3]\n"
+            f"IMPROVED_ANSWER: [rewrite the candidate's answer in a better, structured way — "
+            f"keep their correct points but fix gaps, add missing depth, and frame it professionally]\n"
             f"END"
         )
-        
-        feedback = call_watsonx(prompt, max_tokens=400, temperature=0.2)
+
+        feedback = call_watsonx(prompt, max_tokens=600, temperature=0.2)
         if feedback:
             return {"feedback": feedback, "source": "ibm-watsonx"}
         else:

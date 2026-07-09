@@ -43,11 +43,12 @@ function formatFeedback(text) {
         return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
     }
 
-    const score    = extract('SCORE', text);
-    const summary  = extract('SUMMARY', text);
-    const strengths = extract('STRENGTHS', text);
-    const weaknesses = extract('WEAKNESSES', text);
-    const tips     = extract('IMPROVEMENT_TIPS', text);
+    const score           = extract('SCORE', text);
+    const summary         = extract('SUMMARY', text);
+    const strengths       = extract('STRENGTHS', text);
+    const weaknesses      = extract('WEAKNESSES', text);
+    const tips            = extract('IMPROVEMENT_TIPS', text);
+    const improvedAnswer  = extract('IMPROVED_ANSWER', text);
 
     // If none of the expected markers are present, fall back to plain text
     if (!score && !summary && !strengths) {
@@ -57,7 +58,6 @@ function formatFeedback(text) {
     let html = '';
 
     if (score) {
-        // Highlight the numeric score
         const numeric = score.replace('/10', '').trim();
         html += `<div class="fb-score">
                     <span class="score-num">${escHtml(numeric)}</span>
@@ -90,6 +90,17 @@ function formatFeedback(text) {
                  </div>`;
     }
 
+    if (improvedAnswer) {
+        // Clean up: strip "END" if it leaked in, strip code fences
+        const clean = improvedAnswer.replace(/\bEND\b\s*$/i, '').replace(/```[\s\S]*?```/g, '').trim();
+        if (clean) {
+            html += `<div class="fb-section fb-improved">
+                        <h4 class="fb-heading fb-improved-heading">✏️ How Your Answer Could Look</h4>
+                        <div class="improved-answer-box">${escHtml(clean)}</div>
+                     </div>`;
+        }
+    }
+
     return html;
 }
 
@@ -97,18 +108,31 @@ function formatFeedback(text) {
 const API_URL = "http://127.0.0.1:8000";
 
 let currentModelAnswer = null;
+let currentQuestion    = '';
+let currentRole        = '';
+let currentExp         = '';
 
 const elements = {
-    roleSelect: document.getElementById('role-select'),
-    expSelect: document.getElementById('exp-select'),
-    resumeText: document.getElementById('resume-text'),
-    generateBtn: document.getElementById('generate-btn'),
-    interviewSection: document.getElementById('interview-section'),
-    questionText: document.getElementById('question-text'),
-    userAnswer: document.getElementById('user-answer'),
-    submitBtn: document.getElementById('submit-btn'),
-    feedbackSection: document.getElementById('feedback-section'),
-    feedbackContent: document.getElementById('feedback-content')
+    roleSelect:        document.getElementById('role-select'),
+    expSelect:         document.getElementById('exp-select'),
+    resumeText:        document.getElementById('resume-text'),
+    generateBtn:       document.getElementById('generate-btn'),
+    interviewSection:  document.getElementById('interview-section'),
+    questionText:      document.getElementById('question-text'),
+    userAnswer:        document.getElementById('user-answer'),
+    submitBtn:         document.getElementById('submit-btn'),
+    nextBtn:           document.getElementById('next-btn'),
+    showAnswerBtn:     document.getElementById('show-answer-btn'),
+    showAnswerSection: document.getElementById('show-answer-section'),
+    modelAnswerText:   document.getElementById('model-answer-text'),
+    keyPointsSection:  document.getElementById('key-points-section'),
+    kpRows:            document.getElementById('kp-rows'),
+    kpAddBtn:          document.getElementById('kp-add-btn'),
+    kpGenerateBtn:     document.getElementById('kp-generate-btn'),
+    framedAnswerBox:   document.getElementById('framed-answer-box'),
+    framedAnswerText:  document.getElementById('framed-answer-text'),
+    feedbackSection:   document.getElementById('feedback-section'),
+    feedbackContent:   document.getElementById('feedback-content')
 };
 
 elements.generateBtn.addEventListener('click', async () => {
@@ -137,10 +161,17 @@ elements.generateBtn.addEventListener('click', async () => {
 
         if (response.ok) {
             const data = await response.json();
-            elements.questionText.textContent = data.question;
+            currentQuestion    = data.question;
             currentModelAnswer = data.model_answer;
-            
-            // Show interview section with slide animation
+            currentRole        = role;
+            currentExp         = experience;
+            elements.questionText.textContent = data.question;
+            // Reset secondary UI for fresh question
+            elements.showAnswerSection.classList.add('hidden');
+            elements.feedbackSection.classList.add('hidden');
+            elements.userAnswer.value = '';
+            elements.framedAnswerBox.classList.add('hidden');
+            elements.kpRows.innerHTML = '<div class="kp-row"><input class="kp-input" type="text" placeholder="e.g. Used transfer learning with ResNet50"></div>';
             elements.interviewSection.classList.remove('hidden');
         } else {
             alert('Failed to fetch question. Check if backend is running.');
@@ -167,7 +198,7 @@ elements.submitBtn.addEventListener('click', async () => {
 
     try {
         const payload = {
-            question: elements.questionText.textContent,
+            question: currentQuestion,
             model_answer: currentModelAnswer,
             user_answer: answer
         };
@@ -192,4 +223,58 @@ elements.submitBtn.addEventListener('click', async () => {
         elements.submitBtn.textContent = originalText;
         elements.submitBtn.disabled = false;
     }
+});
+
+/* ── Next Question ────────────────────────────────────────────────── */
+elements.nextBtn.addEventListener('click', () => {
+    elements.generateBtn.click();
+});
+
+/* ── Show Answer ──────────────────────────────────────────────────── */
+elements.showAnswerBtn.addEventListener('click', () => {
+    // Populate model answer text
+    elements.modelAnswerText.textContent = currentModelAnswer || 'No model answer available.';
+
+    // Detect project questions: show key-points collector
+    const isProjectQ = /project|built|developed|implemented|deployed|worked on/i.test(currentQuestion);
+    elements.keyPointsSection.classList.toggle('hidden', !isProjectQ);
+
+    elements.showAnswerSection.classList.remove('hidden');
+    elements.showAnswerSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+});
+
+/* ── Add key-point row ────────────────────────────────────────────── */
+elements.kpAddBtn.addEventListener('click', () => {
+    const row = document.createElement('div');
+    row.className = 'kp-row';
+    row.innerHTML = `<input class="kp-input" type="text" placeholder="Add another key point…">
+                     <button class="kp-remove-btn" onclick="this.parentElement.remove()">−</button>`;
+    elements.kpRows.appendChild(row);
+});
+
+/* ── Generate framed answer from key points ───────────────────────── */
+elements.kpGenerateBtn.addEventListener('click', async () => {
+    const points = [...document.querySelectorAll('.kp-input')]
+        .map(i => i.value.trim()).filter(Boolean);
+    if (points.length === 0) { alert('Please enter at least one key point.'); return; }
+
+    const btn = elements.kpGenerateBtn;
+    btn.innerHTML = '<span class="loader"></span> Generating…'; btn.disabled = true;
+    try {
+        const r = await fetch(`${API_URL}/api/frame_answer`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                question: currentQuestion,
+                key_points: points,
+                role: currentRole,
+                experience: currentExp
+            })
+        });
+        const d = await r.json();
+        elements.framedAnswerText.textContent = d.framed_answer;
+        elements.framedAnswerBox.classList.remove('hidden');
+        elements.framedAnswerBox.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } catch (_) { alert('Failed to generate framed answer.'); }
+    finally { btn.textContent = 'Generate Framed Answer'; btn.disabled = false; }
 });
