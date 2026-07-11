@@ -1,0 +1,29 @@
+{
+  "name": "AI Interview Trainer",
+  "description": "An AI-powered mock interview system using IBM Watsonx, FastAPI, and ChromaDB for RAG-based interview generation and evaluation.",
+  "repository": "https://github.com/Yashgupta-01/Interview-Trainer-Agent",
+  "logo": "https://upload.wikimedia.org/wikipedia/commons/5/51/IBM_logo.svg",
+  "keywords": [
+    "python",
+    "fastapi",
+    "ai",
+    "ibm-watsonx",
+    "rag",
+    "chromadb"
+  ],
+  "env": {
+    "WATSONX_API_KEY": {
+      "description": "IBM Watsonx API Key for generating AI responses",
+      "required": true
+    },
+    "WATSONX_PROJECT_ID": {
+      "description": "IBM Watsonx Project ID",
+      "required": true
+    }
+  },
+  "buildpacks": [
+    {
+      "url": "heroku/python"
+    }
+  ]
+}

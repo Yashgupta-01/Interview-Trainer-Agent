@@ -20,6 +20,7 @@ Developed as part of the **IBM Edunet Summer Internship Project**.
 - 🎚️ **Adaptive Difficulty:** An SQLite-backed engine dynamically tracks your real-time score. Consistent high scores trigger harder questions; lower scores trigger fundamental questions.
 - 🧠 **IBM Watsonx Evaluation:** Real-time grading (0-10) with strengths, weaknesses, actionable improvement tips, and a generated "Model Answer" for every question you attempt.
 - 📊 **Historical Score Tracking:** Dedicated dashboard to view past sessions and track your interview performance over time.
+- ☁️ **Cloud Deployment Ready:** Includes standard `app.json` manifest for 1-click deployments to platforms like Heroku or IBM Cloud.
 
 ---
 
@@ -108,6 +109,14 @@ uvicorn backend.main:app --host 127.0.0.1 --port 8000 --reload
 
 ### 5. Access the App
 Open your browser and navigate to: [http://127.0.0.1:8000](http://127.0.0.1:8000)
+
+### 6. 🌐 Share Publicly (For Evaluators)
+If you need to share your locally running application with an evaluator or mentor over the internet without deploying it to a cloud server, you can use **Pinggy** to create a secure, free public tunnel.
+With your backend already running, open a **new** terminal and type:
+```bash
+ssh -p 443 -R0:localhost:8000 a.pinggy.io
+```
+This will instantly generate a public `https://` URL that anyone can use to access the app running on your laptop.
 
 ---
 
