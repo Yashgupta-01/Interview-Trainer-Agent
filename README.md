@@ -120,4 +120,14 @@ This application incorporates several backend security measures designed to prot
 - **Local Data Storage:** Candidate resumes are parsed entirely in memory and session data is stored in a local SQLite database, meaning no PII is permanently stored in public cloud buckets.
 
 ---
-*Built with ❤️ for the IBM Edunet Internship Program.*
+
+##Note for the deployment:
+During the deployment phase to cloud platforms (like Render/Vercel), I encountered consistent server crashes ("Out of Memory" - OOM errors) on the standard free tiers.
+
+The Root Cause: Our application utilizes an advanced RAG (Retrieval-Augmented Generation) pipeline powered by ChromaDB. When the server starts, ChromaDB must download and load the all-MiniLM-L6-v2 sentence-transformer AI embedding model directly into the server's RAM to perform vector similarity searches.
+
+Free-tier cloud environments strictly limit applications to 512 MB of RAM. The combination of the FastAPI backend, ChromaDB's C++ dependencies, and loading the ONNX AI embedding model inherently spikes memory usage beyond this 512 MB limit, causing the cloud provider to forcefully kill the container.
+
+**It's ready to be deployed but needs a better service.
+
+
