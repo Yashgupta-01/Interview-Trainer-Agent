@@ -155,20 +155,34 @@ async def generate_strategy(request: Request, req: SessionRequest):
     if not WATSONX_API_KEY:
         return {"strategy": "IBM Watsonx API key is missing. Cannot generate strategy."}
         
+    if len(req.resume.strip()) < 15:
+        return {"strategy": "- Please provide a valid, detailed resume or background summary to generate a personalized strategy."}
+        
     prompt = (
         f"You are an expert career coach.\n"
         f"Candidate Name: {req.profile_name}\n"
         f"Candidate Role: {req.experience} {req.role}\n"
         f"Candidate Background: {req.resume}\n\n"
-        f"Based ONLY on their background, generate a short, personalized Preparation Strategy (3-4 bullet points) "
-        f"for their upcoming interview. Highlight what they should focus on studying.\n"
-        f"Output nothing but the bullet points."
+        f"Based ONLY on their background, generate a personalized Preparation Strategy. Output strictly in VALID JSON format with the exact key 'strategy_bullets' (list of strings, max 4).\n"
+        f"Do not output any conversational text, markdown formatting, or filler. Only JSON."
     )
     
-    result = await call_watsonx_async(prompt, max_tokens=250, temperature=0.6)
+    result = await call_watsonx_async(prompt, max_tokens=250, temperature=0.3)
     if result:
-        return {"strategy": result}
-    return {"strategy": "Failed to generate strategy."}
+        try:
+            match = re.search(r'\{.*\}', result, re.DOTALL)
+            clean_json = match.group(0) if match else re.sub(r'```json|```', '', result).strip()
+            parsed = json.loads(clean_json)
+            
+            strategy_md = ""
+            for bullet in parsed.get("strategy_bullets", []):
+                strategy_md += f"* {bullet}\n"
+            return {"strategy": strategy_md.strip()}
+        except Exception as e:
+            print(f"JSON Parse error in strategy: {e}")
+            return {"strategy": "- Failed to parse generated strategy."}
+            
+    return {"strategy": "- Failed to generate strategy."}
 
 @app.post("/api/start")
 @limiter.limit("10/minute")
@@ -247,6 +261,7 @@ async def frame_answer(request: Request, req: FrameAnswerRequest):
         f"The candidate's key points:\n{points_text}\n\n"
         f"Using ONLY these key points, write a concise, well-structured answer (3-5 sentences) "
         f"using the STAR method where applicable. Do not invent facts not in the key points.\n\n"
+        f"CRITICAL RULE: DO NOT output any conversational filler. Do not say 'Here is your answer' or 'Let me know if you need help' or 'I am open to suggestions'. Output ONLY the framed answer text and nothing else.\n\n"
         f"Answer:"
     )
     result = await call_watsonx_async(prompt, max_tokens=300, temperature=0.4)
@@ -339,17 +354,33 @@ async def generate_report(request: Request, req: SessionRequest):
     history_text = "\n".join([f"Q: {h['question']} | Score: {h['score']}/10" for h in history])
     
     prompt = (
-        f"You are a career coach giving a final debrief.\n"
+        f"You are a strict career coach giving a final debrief.\n"
         f"Candidate: {req.profile_name} ({req.role})\n"
         f"Average Score: {avg_score:.1f}/10\n"
         f"Session History:\n{history_text}\n\n"
-        f"Generate a VERY BRIEF and concise summary report (maximum 3-4 bullet points). "
-        f"Highlight the top weak areas and give a quick study plan. Be direct and short."
+        f"Generate a VERY BRIEF summary report. Output strictly in VALID JSON format with exact keys: "
+        f"'weak_areas' (list of strings, max 2), 'study_plan' (list of strings, max 2).\n"
+        f"Do not output any conversational text, markdown formatting, or filler. Only JSON."
     )
     
-    result = await call_watsonx_async(prompt, max_tokens=250, temperature=0.5)
+    result = await call_watsonx_async(prompt, max_tokens=250, temperature=0.3)
     if result:
-        return {"report": result, "average_score": avg_score}
+        try:
+            match = re.search(r'\{.*\}', result, re.DOTALL)
+            clean_json = match.group(0) if match else re.sub(r'```json|```', '', result).strip()
+            parsed = json.loads(clean_json)
+            
+            report_md = "Top Weak Areas:\n"
+            for w in parsed.get("weak_areas", []):
+                report_md += f"* {w}\n"
+            report_md += "\nQuick Study Plan:\n"
+            for s in parsed.get("study_plan", []):
+                report_md += f"- {s}\n"
+                
+            return {"report": report_md.strip(), "average_score": avg_score}
+        except Exception as e:
+            print(f"JSON Parse error in report: {e}, raw: {result[:200]}")
+            return {"report": result, "average_score": avg_score}
     return {"report": "Failed to generate report.", "average_score": avg_score}
 
 if __name__ == "__main__":

@@ -356,6 +356,9 @@ elements.endInterviewBtn.addEventListener('click', async () => {
             elements.reportAvgScore.textContent = (data.average_score || 0).toFixed(1);
             elements.reportContent.innerHTML = (data.report || "").replace(/\n/g, '<br>');
             elements.interviewSection.classList.add('hidden'); // Hide the interview
+            elements.feedbackSection.classList.add('hidden');
+            elements.keyPointsSection.classList.add('hidden');
+            elements.showAnswerSection.classList.add('hidden');
             elements.reportSection.classList.remove('hidden');
             elements.reportSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
         } else {
