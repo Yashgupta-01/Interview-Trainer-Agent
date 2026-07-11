@@ -1,4 +1,4 @@
-# 🤖 AI Interview Trainer (v2.0)
+# 🤖 AI Interview Trainer
 
 ![Python](https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white)
 ![FastAPI](https://img.shields.io/badge/FastAPI-005571?style=for-the-badge&logo=fastapi)
@@ -110,13 +110,6 @@ uvicorn backend.main:app --host 127.0.0.1 --port 8000 --reload
 ### 5. Access the App
 Open your browser and navigate to: [http://127.0.0.1:8000](http://127.0.0.1:8000)
 
-### 6. 🌐 Share Publicly (For Evaluators)
-If you need to share your locally running application with an evaluator or mentor over the internet without deploying it to a cloud server, you can use **Pinggy** to create a secure, free public tunnel.
-With your backend already running, open a **new** terminal and type:
-```bash
-ssh -p 443 -R0:localhost:8000 a.pinggy.io
-```
-This will instantly generate a public `https://` URL that anyone can use to access the app running on your laptop.
 
 ---
 
