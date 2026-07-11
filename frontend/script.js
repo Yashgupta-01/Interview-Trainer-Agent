@@ -111,17 +111,28 @@ let currentModelAnswer = null;
 let currentQuestion    = '';
 let currentRole        = '';
 let currentExp         = '';
+const sessionId        = crypto.randomUUID(); // Unique session ID for tracking
+
 
 const elements = {
+    profileName:       document.getElementById('profile-name'),
     roleSelect:        document.getElementById('role-select'),
     expSelect:         document.getElementById('exp-select'),
+    resumeFile:        document.getElementById('resume-file'),
+    uploadResumeBtn:   document.getElementById('upload-resume-btn'),
     resumeText:        document.getElementById('resume-text'),
-    generateBtn:       document.getElementById('generate-btn'),
+    setupSection:      document.getElementById('setup-section'),
+    generateStrategyBtn: document.getElementById('generate-strategy-btn'),
+    strategySection:   document.getElementById('strategy-section'),
+    strategyText:      document.getElementById('strategy-text'),
+    startInterviewBtn: document.getElementById('start-interview-btn'),
     interviewSection:  document.getElementById('interview-section'),
+    endInterviewBtn:   document.getElementById('end-interview-btn'),
     questionText:      document.getElementById('question-text'),
     userAnswer:        document.getElementById('user-answer'),
     submitBtn:         document.getElementById('submit-btn'),
-    nextBtn:           document.getElementById('next-btn'),
+    generateNextBtn:   document.getElementById('generate-next-btn'),
+    questionTypeSelect:document.getElementById('question-type-select'),
     showAnswerBtn:     document.getElementById('show-answer-btn'),
     showAnswerSection: document.getElementById('show-answer-section'),
     modelAnswerText:   document.getElementById('model-answer-text'),
@@ -132,23 +143,102 @@ const elements = {
     framedAnswerBox:   document.getElementById('framed-answer-box'),
     framedAnswerText:  document.getElementById('framed-answer-text'),
     feedbackSection:   document.getElementById('feedback-section'),
-    feedbackContent:   document.getElementById('feedback-content')
+    feedbackContent:   document.getElementById('feedback-content'),
+    reportSection:     document.getElementById('report-section'),
+    reportAvgScore:    document.getElementById('report-avg-score'),
+    reportContent:     document.getElementById('report-content'),
+    backHomeBtn:       document.getElementById('back-home-btn')
 };
 
-elements.generateBtn.addEventListener('click', async () => {
+elements.uploadResumeBtn.addEventListener('click', async () => {
+    const file = elements.resumeFile.files[0];
+    if (!file) {
+        alert("Please select a file first.");
+        return;
+    }
+    const formData = new FormData();
+    formData.append("file", file);
+    
+    elements.uploadResumeBtn.textContent = 'Uploading...';
+    elements.uploadResumeBtn.disabled = true;
+    
+    try {
+        const response = await fetch(`${API_URL}/api/upload_resume`, {
+            method: 'POST',
+            body: formData
+        });
+        if (response.ok) {
+            const data = await response.json();
+            elements.resumeText.value = data.resume_text;
+            alert("Resume parsed successfully!");
+        } else {
+            alert("Failed to parse resume.");
+        }
+    } catch (error) {
+        alert("Connection error during upload.");
+    } finally {
+        elements.uploadResumeBtn.textContent = 'Upload';
+        elements.uploadResumeBtn.disabled = false;
+    }
+});
+
+elements.generateStrategyBtn.addEventListener('click', async () => {
+    const profileName = elements.profileName.value.trim();
     const role = elements.roleSelect.value;
     const experience = elements.expSelect.value;
     const resume = elements.resumeText.value.trim();
 
-    if (!resume) {
-        alert("Please paste a brief resume or background summary so our AI can fetch tailored questions via RAG!");
+    if (!profileName || !resume) {
+        alert("Please enter your name and paste a brief resume or background summary!");
         return;
     }
     
+    const originalText = elements.generateStrategyBtn.textContent;
+    elements.generateStrategyBtn.innerHTML = '<span class="loader"></span> Analyzing...';
+    elements.generateStrategyBtn.disabled = true;
+
+    try {
+        const response = await fetch(`${API_URL}/api/strategy`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ session_id: sessionId, profile_name: profileName, role: role, experience: experience, resume: resume })
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            // Format strategy with line breaks
+            elements.strategyText.innerHTML = data.strategy.replace(/\n/g, '<br>');
+            elements.strategySection.classList.remove('hidden');
+            currentRole = role;
+            currentExp = experience;
+        } else {
+            alert('Failed to fetch strategy.');
+        }
+    } catch (error) {
+        alert('Connection error. Ensure backend is running.');
+    } finally {
+        elements.generateStrategyBtn.textContent = originalText;
+        elements.generateStrategyBtn.disabled = false;
+    }
+});
+
+elements.startInterviewBtn.addEventListener('click', () => {
+    elements.setupSection.classList.add('hidden');
+    elements.interviewSection.classList.remove('hidden');
+    elements.generateNextBtn.click();
+});
+
+elements.generateNextBtn.addEventListener('click', async () => {
+    const profileName = elements.profileName.value.trim();
+    const role = elements.roleSelect.value;
+    const experience = elements.expSelect.value;
+    const resume = elements.resumeText.value.trim();
+    const questionType = elements.questionTypeSelect.value;
+    
     // UI Loading State
-    const originalText = elements.generateBtn.textContent;
-    elements.generateBtn.innerHTML = '<span class="loader"></span> Generating...';
-    elements.generateBtn.disabled = true;
+    const originalText = elements.generateNextBtn.textContent;
+    elements.generateNextBtn.innerHTML = '<span class="loader"></span> Generating...';
+    elements.generateNextBtn.disabled = true;
     elements.feedbackSection.classList.add('hidden');
     elements.userAnswer.value = '';
 
@@ -156,31 +246,29 @@ elements.generateBtn.addEventListener('click', async () => {
         const response = await fetch(`${API_URL}/api/start`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ role: role, experience: experience, resume: resume })
+            body: JSON.stringify({ session_id: sessionId, profile_name: profileName, role: role, experience: experience, resume: resume, question_type: questionType })
         });
 
         if (response.ok) {
             const data = await response.json();
             currentQuestion    = data.question;
             currentModelAnswer = data.model_answer;
-            currentRole        = role;
-            currentExp         = experience;
             elements.questionText.textContent = data.question;
+            
             // Reset secondary UI for fresh question
             elements.showAnswerSection.classList.add('hidden');
             elements.feedbackSection.classList.add('hidden');
             elements.userAnswer.value = '';
             elements.framedAnswerBox.classList.add('hidden');
             elements.kpRows.innerHTML = '<div class="kp-row"><input class="kp-input" type="text" placeholder="e.g. Used transfer learning with ResNet50"></div>';
-            elements.interviewSection.classList.remove('hidden');
         } else {
             alert('Failed to fetch question. Check if backend is running.');
         }
     } catch (error) {
         alert('Connection error. Ensure the FastAPI backend is running on port 8000.');
     } finally {
-        elements.generateBtn.textContent = originalText;
-        elements.generateBtn.disabled = false;
+        elements.generateNextBtn.textContent = originalText;
+        elements.generateNextBtn.disabled = false;
     }
 });
 
@@ -198,6 +286,7 @@ elements.submitBtn.addEventListener('click', async () => {
 
     try {
         const payload = {
+            session_id: sessionId,
             question: currentQuestion,
             model_answer: currentModelAnswer,
             user_answer: answer
@@ -211,7 +300,25 @@ elements.submitBtn.addEventListener('click', async () => {
 
         if (response.ok) {
             const data = await response.json();
-            elements.feedbackContent.innerHTML = formatFeedback(data.feedback);
+            
+            // Format feedback from JSON
+            const fb = data.feedback;
+            let fbHtml = `<div class="fb-score"><span class="score-num">${fb.score}</span><span class="score-denom">&nbsp;/ 10</span></div>`;
+            fbHtml += `<p class="fb-summary">${fb.summary || ''}</p>`;
+            if (fb.strengths && fb.strengths.length) {
+                fbHtml += `<div class="fb-section"><h4 class="fb-heading fb-strengths">✔ Strengths</h4><ul>${fb.strengths.map(s => `<li>${s}</li>`).join('')}</ul></div>`;
+            }
+            if (fb.weaknesses && fb.weaknesses.length) {
+                fbHtml += `<div class="fb-section"><h4 class="fb-heading fb-weaknesses">✘ Weaknesses</h4><ul>${fb.weaknesses.map(s => `<li>${s}</li>`).join('')}</ul></div>`;
+            }
+            if (fb.improvement_tips && fb.improvement_tips.length) {
+                fbHtml += `<div class="fb-section"><h4 class="fb-heading fb-tips">💡 Improvement Tips</h4><ul>${fb.improvement_tips.map(s => `<li>${s}</li>`).join('')}</ul></div>`;
+            }
+            if (fb.improved_answer) {
+                fbHtml += `<div class="fb-section fb-improved"><h4 class="fb-heading fb-improved-heading">✏️ How Your Answer Could Look</h4><div class="improved-answer-box">${fb.improved_answer}</div></div>`;
+            }
+            
+            elements.feedbackContent.innerHTML = fbHtml;
             elements.feedbackSection.classList.remove('hidden');
         } else {
             const err = await response.json().catch(() => ({}));
@@ -225,9 +332,58 @@ elements.submitBtn.addEventListener('click', async () => {
     }
 });
 
-/* ── Next Question ────────────────────────────────────────────────── */
-elements.nextBtn.addEventListener('click', () => {
-    elements.generateBtn.click();
+
+
+elements.endInterviewBtn.addEventListener('click', async () => {
+    elements.endInterviewBtn.innerHTML = '<span class="loader"></span> Generating...';
+    elements.endInterviewBtn.disabled = true;
+
+    try {
+        const response = await fetch(`${API_URL}/api/report`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                session_id: sessionId, 
+                profile_name: elements.profileName.value.trim(), 
+                role: elements.roleSelect.value, 
+                experience: elements.expSelect.value, 
+                resume: elements.resumeText.value.trim() 
+            })
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            elements.reportAvgScore.textContent = (data.average_score || 0).toFixed(1);
+            elements.reportContent.innerHTML = (data.report || "").replace(/\n/g, '<br>');
+            elements.interviewSection.classList.add('hidden'); // Hide the interview
+            elements.reportSection.classList.remove('hidden');
+            elements.reportSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        } else {
+            alert('Failed to generate report.');
+        }
+    } catch (error) {
+        alert('Connection error.');
+    } finally {
+        elements.endInterviewBtn.textContent = '🛑 End Mock Interview';
+        elements.endInterviewBtn.disabled = false;
+    }
+});
+
+elements.backHomeBtn.addEventListener('click', () => {
+    // Reset to start page
+    elements.reportSection.classList.add('hidden');
+    elements.setupSection.classList.remove('hidden');
+    elements.setupSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    
+    // Clear inputs
+    elements.profileName.value = '';
+    elements.resumeFile.value = '';
+    elements.resumeText.value = '';
+    elements.strategyText.innerHTML = '';
+    elements.strategySection.classList.add('hidden');
+    
+    // Refresh the page fully to reset all state variables
+    window.location.reload();
 });
 
 /* ── Show Answer ──────────────────────────────────────────────────── */

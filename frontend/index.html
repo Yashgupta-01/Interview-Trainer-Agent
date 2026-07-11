@@ -14,45 +14,73 @@
     </div>
 
     <div class="glass-container">
-        <header>
-            <h1 class="gradient-text">AI Interview Trainer</h1>
-            <p>Powered by IBM Cloud & Watsonx</p>
+        <header style="display: flex; justify-content: space-between; align-items: center;">
+            <div>
+                <h1 class="gradient-text">AI Interview Trainer</h1>
+                <p>Powered by IBM Cloud & Watsonx</p>
+            </div>
+            <a href="/static/history.html" class="secondary-btn" style="text-decoration: none; padding: 4px 10px; font-size: 0.8rem; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); width: max-content; min-width: 0; flex: 0 0 auto; display: inline-flex; justify-content: center;">📊 History</a>
         </header>
 
         <main>
-            <div class="control-panel">
-                <div class="input-group">
-                    <label for="role-select">Select your Role</label>
-                    <div class="select-wrapper">
-                        <select id="role-select">
-                            <option value="Machine Learning Engineer">Machine Learning Engineer</option>
-                            <option value="Data Scientist">Data Scientist</option>
-                            <option value="Data Analyst">Data Analyst</option>
-                            <option value="AI Engineer">AI Engineer</option>
-                        </select>
+            <div id="setup-section">
+                <div class="control-panel">
+                    <div class="input-group" style="margin-bottom:16px;">
+                        <label for="profile-name">Profile Name</label>
+                        <input type="text" id="profile-name" class="kp-input" placeholder="e.g. John Doe">
+                    </div>
+                    
+                    <div style="display: flex; gap: 16px;">
+                        <div class="input-group" style="flex: 1;">
+                            <label for="role-select">Select your Role</label>
+                            <div class="select-wrapper">
+                                <select id="role-select">
+                                    <option value="Machine Learning Engineer">Machine Learning Engineer</option>
+                                    <option value="Data Scientist">Data Scientist</option>
+                                    <option value="Data Analyst">Data Analyst</option>
+                                    <option value="AI Engineer">AI Engineer</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="input-group" style="flex: 1;">
+                            <label for="exp-select">Experience Level</label>
+                            <div class="select-wrapper">
+                                <select id="exp-select">
+                                    <option value="Junior">Junior</option>
+                                    <option value="Mid">Mid</option>
+                                    <option value="Senior">Senior</option>
+                                </select>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 
-                <div class="input-group">
-                    <label for="exp-select">Experience Level</label>
-                    <div class="select-wrapper">
-                        <select id="exp-select">
-                            <option value="Junior">Junior</option>
-                            <option value="Mid">Mid</option>
-                            <option value="Senior">Senior</option>
-                        </select>
+                <div class="resume-section">
+                    <label for="resume-file">Upload your Resume (PDF/DOCX) or Paste Background</label>
+                    <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                        <input type="file" id="resume-file" accept=".pdf,.docx" class="kp-input" style="flex: 1;">
+                        <button id="upload-resume-btn" class="secondary-btn" style="flex: 0;">Upload</button>
+                    </div>
+                    <textarea id="resume-text" placeholder="I have 0 months of experience... or I have 3 years building PyTorch..." rows="4"></textarea>
+                    <button id="generate-strategy-btn" class="primary-btn">Generate Prep Strategy</button>
+                </div>
+                
+                <div id="strategy-section" class="hidden slide-up" style="margin-top:20px;">
+                    <div class="glass-card" style="padding: 20px;">
+                        <h3><span class="ma-icon">🎯</span> Your Preparation Strategy</h3>
+                        <p id="strategy-text" style="margin-top:10px; font-size:15px; line-height:1.6;"></p>
+                        <button id="start-interview-btn" class="submit-btn" style="margin-top:20px; width:100%;">Start Interview Loop →</button>
                     </div>
                 </div>
             </div>
-            
-            <div class="resume-section">
-                <label for="resume-text">Paste your Resume / Background (For AI RAG Matching)</label>
-                <textarea id="resume-text" placeholder="I have 3 years of experience building PyTorch models and deploying them using Docker..." rows="4"></textarea>
-                <button id="generate-btn" class="primary-btn">Generate Tailored Interview Question</button>
-            </div>
 
             <div id="interview-section" class="hidden slide-up">
-                <div class="question-card">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <h2><span class="ma-icon">🤖</span> AI Interviewer</h2>
+                    <button id="end-interview-btn" style="padding: 6px 12px; font-size: 0.85rem; background: rgba(255, 59, 48, 0.1); border: 1px solid rgba(255, 59, 48, 0.4); color: #ff3b30; border-radius: 6px; cursor: pointer; transition: all 0.2s;">🛑 End Interview</button>
+                </div>
+                <div class="glass-card" style="margin-bottom: 24px; margin-top: 10px;">
                     <div class="card-header">
                         <span class="pulse-dot"></span>
                         <h3>Interview Question</h3>
@@ -64,11 +92,18 @@
                     <label for="user-answer">Your Answer</label>
                     <textarea id="user-answer" placeholder="Explain your thought process here..." rows="5"></textarea>
 
-                    <!-- Action buttons row -->
-                    <div class="action-row">
-                        <button id="submit-btn" class="submit-btn">Submit Answer for Evaluation</button>
-                        <button id="show-answer-btn" class="secondary-btn">💡 Show Answer</button>
-                        <button id="next-btn" class="next-btn">Next Question →</button>
+                    <div class="action-row" style="flex-wrap: wrap; gap: 10px; justify-content: space-between;">
+                        <div style="display: flex; gap: 10px; align-items: center;">
+                            <button id="submit-btn" class="submit-btn">Submit Answer for Evaluation</button>
+                            <button id="show-answer-btn" class="secondary-btn">💡 Show Answer</button>
+                        </div>
+                        <div style="display: flex; gap: 10px; align-items: center;">
+                            <select id="question-type-select" class="kp-input" style="width: auto;">
+                                <option value="Technical">Technical</option>
+                                <option value="Behavioral">Behavioral/HR</option>
+                            </select>
+                            <button id="generate-next-btn" class="next-btn">Generate Next Question →</button>
+                        </div>
                     </div>
                 </div>
 
@@ -111,9 +146,20 @@
                     <div id="feedback-content" class="feedback-content"></div>
                 </div>
             </div>
+
+            <!-- Aggregate Report Section -->
+            <div id="report-section" class="hidden slide-up" style="margin-top: 30px;">
+                <div class="glass-card fb-card" style="background: rgba(48, 209, 88, 0.1); border-color: rgba(48, 209, 88, 0.3);">
+                    <h2><span class="ma-icon">📈</span> Final Session Report</h2>
+                    <h3 style="margin-top: 10px;">Average Score: <span id="report-avg-score"></span>/10</h3>
+                    <div id="report-content" style="margin-top: 16px; font-size: 15px; line-height: 1.6; white-space: pre-wrap;"></div>
+                    <button id="back-home-btn" class="secondary-btn" style="margin-top: 20px; width: 100%;">🔙 Back to Home</button>
+                </div>
+            </div>
+            
         </main>
     </div>
 
-    <script src="/static/script.js"></script>
+    <script src="/static/script.js?v=3"></script>
 </body>
 </html>

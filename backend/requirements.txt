@@ -1,6 +1,9 @@
 fastapi
-uvicorn
-ibm-cos-sdk
-pydantic
+uvicorn[standard]
+httpx
 python-dotenv
-requests
+pydantic
+PyPDF2
+python-docx
+chromadb
+slowapi
